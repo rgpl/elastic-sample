@@ -15,10 +15,13 @@ import {
     EuiBottomBar,
     EuiFlexGroup,
     EuiFlexItem,
-    EuiButton
+    EuiButton,
+    EuiForm,
+    EuiFormRow
   } from '@elastic/eui';
 import './login.css';
 import { Redirect} from 'react-router-dom';
+import axios from 'axios';
 
 class Login extends React.Component {
     constructor(props) {
@@ -26,8 +29,9 @@ class Login extends React.Component {
 
         this.state = {
             userName: '',
-            password:'',
-            authenticated:false
+            password: '',
+            authenticated: false,
+            showErrors: false
         };
     }
 
@@ -44,15 +48,59 @@ class Login extends React.Component {
     }
 
     onLoginClick = e => {
-        console.log('login-called');
-        this.setState({
-            authenticated: true
-        });
+
+        if(this.state.username !== "" && this.state.password !== "") {
+
+            this.setState({
+                showErrors: false
+            });
+
+            axios.get('http://localhost:4000/login', {
+                params: {
+                username: this.state.userName,
+                password: this.state.password
+                }
+            },{ withCredentials: true })
+            .then( (response)=> {
+                console.log("login-response->",response);
+                if(response.data.success){
+                    this.setState({
+                        authenticated:true
+                    });
+                }
+            })
+            .catch((error) => console.log("login->",error))
+            .finally(() => {
+                // always executed
+            });
+        } else {
+            this.setState({
+                showErrors: true
+            });
+        }
+    }
+
+    enterPressed = e => {
+
+        let code = e.keyCode || e.which;
+        if(code === 13) {
+            if(this.state.username !== "" && this.state.password !== "") {
+                this.onLoginClick();
+            }
+        }
     }
 
     render() {
         if(this.state.authenticated){
             return <Redirect to='/' />
+        }
+
+        let errors;
+
+        if (this.state.showErrors) {
+            errors = [
+                "Username / Password cannot be empty!!",
+            ];
         }
 
         return (
@@ -76,26 +124,38 @@ class Login extends React.Component {
                     </EuiPageContentHeaderSection>
                     </EuiPageContentHeader>
                     <EuiPageContentBody>
-                        <EuiFieldText
-                        placeholder="Username"
-                        value={this.state.userName}
-                        onChange={this.onNameChange}
-                        icon="user"
-                        aria-label="Use aria labels when no actual label is in use"
-                        />
-                        <EuiSpacer size="m"></EuiSpacer>
-                        <EuiFieldPassword
-                        placeholder="Password"
-                        value={this.state.password}
-                        onChange={this.onPasswordChange}
-                        aria-label="Use aria labels when no actual label is in use"
-                        />
-                        <EuiSpacer size="m"></EuiSpacer>
-                        <EuiFlexItem grow={false}>
-                            <EuiButton fill onClick={this.onLoginClick}>
-                                GO
-                            </EuiButton>
-                        </EuiFlexItem>
+                        <EuiForm isInvalid={this.state.showErrors} error={errors}>
+                            <EuiFormRow>
+                                <EuiFieldText
+                                placeholder="Username"
+                                value={this.state.userName}
+                                onChange={this.onNameChange}
+                                icon="user"
+                                aria-label="Use aria labels when no actual label is in use"
+                                onKeyUp={this.enterPressed}
+                                />
+                            </EuiFormRow>
+
+                            <EuiSpacer size="m"></EuiSpacer>
+
+                            <EuiFormRow>
+                                <EuiFieldPassword
+                                placeholder="Password"
+                                value={this.state.password}
+                                onChange={this.onPasswordChange}
+                                aria-label="Use aria labels when no actual label is in use"
+                                onKeyUp={this.enterPressed}
+                                />
+                            </EuiFormRow>
+
+                            <EuiSpacer size="m"></EuiSpacer>
+                            <EuiFlexItem grow={false}>
+                                <EuiButton fill onClick={this.onLoginClick}>
+                                    GO
+                                </EuiButton>
+                            </EuiFlexItem>
+                        </EuiForm>
+
                     </EuiPageContentBody>
                 </EuiPageContent>
                 <EuiBottomBar>
